@@ -1,4 +1,4 @@
-#include "tokenizer.hpp"
+#include <minidb/tokenizer.hpp>
 #include <cctype>
 
 using namespace std;
