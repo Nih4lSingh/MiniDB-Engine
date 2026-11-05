@@ -1,0 +1,60 @@
+#pragma once
+
+#include <minidb/tokenizer.hpp>
+#include <stdexcept>
+#include <vector>
+#include <string>
+
+namespace minidb {
+    enum class DataType {
+        Integer,
+        Text
+    };
+
+    struct CreateTableStatement {
+        std::string tableName;
+        std::vector<ColumnDefinition> columns;
+    };
+
+    struct ColumnDefinition {
+        std::string name;
+        DataType type;
+    };
+
+    struct InsertStatement {
+        std::string tableName;
+        std::vector<std::string> values;
+    };
+
+    struct SelectStatement {
+        // An empty list will mean SELECT *.
+        std::vector<std::string> columns;
+        std::string tableName;
+    };
+
+    struct Statement {
+        enum class Kind {
+            CreateTable,
+            Insert,
+            Select
+        };
+
+        Kind kind;
+        CreateTableStatement createTable;
+        InsertStatement insert;
+        SelectStatement select;
+    };
+
+    class ParseError : public std::runtime_error {
+    public:
+        ParseError(std::size_t tokenIndex, const std::string& message);
+        std::size_t tokenIndex() const noexcept;
+
+    private:
+        std::size_t tokenIndex_;
+    };
+
+    // Parses exactly one SQL statement. A trailing semicolon is optional.
+    Statement parseStatement(const std::vector<Token>& tokens);
+
+}
