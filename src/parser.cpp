@@ -126,12 +126,12 @@ namespace minidb {
                 if (i >= end || tokens[i].kind != TokenKind::Comma) break;
                 ++i;
             }
-            if(insert.values.size()!= insert.columns.size() && !insert.columns.empty()){
-                throw ParseError(i, "Number of values does not match number of columns");
-            }
             
             if (i >= end || tokens[i++].kind != TokenKind::RightParen) {
                 throw ParseError(i - 1, "Expected ) after values");
+            }
+            if(insert.values.size()!= insert.columns.size() && !insert.columns.empty()){
+                throw ParseError(i, "Number of values does not match number of columns");
             }
             if (i != end) throw ParseError(i, "Unexpected token after INSERT statement");
 
