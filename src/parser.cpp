@@ -9,14 +9,20 @@
 #include <set>
 
 using namespace std;
+
 bool equalsIgnoreCase(string left, string right) {
     auto toLower = [](unsigned char ch) {
-        return static_cast<char>(std::tolower(ch));
+        return static_cast<char>(tolower(ch));
     };
 
     transform(left.begin(), left.end(), left.begin(), toLower);
     return left == right;
 }
+
+auto toLower = [](unsigned char ch) {
+        return static_cast<char>(tolower(ch));
+    };
+
 namespace minidb {
     ParseError::ParseError(size_t tokenIndex, const string& message)
     : runtime_error("at token " + to_string(tokenIndex) + ": " + message),
@@ -69,21 +75,30 @@ namespace minidb {
                 if (i >= end || tokens[i].kind != TokenKind::Identifier) {
                     throw ParseError(i, "Expected column name");
                 }
-                insert.columns.push_back(tokens[i].text);
+                string Colname=tokens[i].text;
+                transform(Colname.begin(), Colname.end(), Colname.begin(), toLower);
+                insert.columns.push_back(Colname);
                 ++i;
                 while (i < end && tokens[i].kind == TokenKind::Comma) {
                     ++i;
                     if (i >= end || tokens[i].kind != TokenKind::Identifier) {
                         throw ParseError(i, "Expected column name after comma");
                     }
-                    insert.columns.push_back(tokens[i].text);
+                    Colname=tokens[i].text;
+                    transform(Colname.begin(), Colname.end(), Colname.begin(), toLower);
+                    insert.columns.push_back(Colname);
                     ++i;
                 }
                 if (i >= end || tokens[i++].kind != TokenKind::RightParen) {
                     throw ParseError(i - 1, "Expected ) after column list");
                 }
             }
-
+            set <string> uniqueColumns;
+            for (const auto& column : insert.columns) {
+                if (!uniqueColumns.insert(column).second) {
+                    throw ParseError(i, "Duplicate column name: " + column);
+                }
+            }
             if (i >= end || tokens[i].kind != TokenKind::Identifier ||
                 !equalsIgnoreCase(tokens[i++].text, "values")) {
                 throw ParseError(i - 1, "Expected VALUES after table name or column list");
@@ -114,12 +129,7 @@ namespace minidb {
             if(insert.values.size()!= insert.columns.size() && !insert.columns.empty()){
                 throw ParseError(i, "Number of values does not match number of columns");
             }
-            set <string> uniqueColumns;
-            for (const auto& column : insert.columns) {
-                if (!uniqueColumns.insert(column).second) {
-                    throw ParseError(i, "Duplicate column name: " + column);
-                }
-            }
+            
             if (i >= end || tokens[i++].kind != TokenKind::RightParen) {
                 throw ParseError(i - 1, "Expected ) after values");
             }
