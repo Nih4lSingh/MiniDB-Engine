@@ -14,7 +14,7 @@ namespace minidb {
     size_t ParseError::tokenIndex() const noexcept {
         return tokenIndex_;
     }
-    vector<Token> tokenize(const std::string& sql){
+    Statement parseStatement(const vector<Token>& tokens) {
         
     }
 }
