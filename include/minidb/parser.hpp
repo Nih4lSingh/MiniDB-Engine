@@ -11,19 +11,20 @@ namespace minidb {
         Text
     };
 
-    struct CreateTableStatement {
-        std::string tableName;
-        std::vector<ColumnDefinition> columns;
-    };
-
     struct ColumnDefinition {
         std::string name;
         DataType type;
     };
 
+    struct CreateTableStatement {
+        std::string tableName;
+        std::vector<ColumnDefinition> columns;
+    };
+
     struct InsertStatement {
         std::string tableName;
-        std::vector<std::string> values;
+        std::vector<std::string> columns; // Optional list of columns to insert into. If empty, all columns are assumed.
+        std::vector<Token> values;
     };
 
     struct SelectStatement {

@@ -108,49 +108,20 @@ namespace minidb {
                 continue;
             }
 
-            if(c == ','){
-                tokens.push_back({TokenKind::Comma, string(1, c), i});
-                i++;
-                continue;
+            TokenKind punctuation;
+            switch (c) {
+                case ',': punctuation = TokenKind::Comma; break;
+                case '*': punctuation = TokenKind::Star; break;
+                case ';': punctuation = TokenKind::Semicolon; break;
+                case '(': punctuation = TokenKind::LeftParen; break;
+                case ')': punctuation = TokenKind::RightParen; break;
+                case '+': punctuation = TokenKind::Plus; break;
+                case '-': punctuation = TokenKind::Minus; break;
+                default: throw TokenizeError(i, "Invalid character");
             }
-
-            if(c == '*'){
-                tokens.push_back({TokenKind::Star, string(1, c), i});
-                i++;
-                continue;
-            }
-
-            if(c == ';'){
-                tokens.push_back({TokenKind::Semicolon, string(1, c), i});
-                i++;
-                continue;
-            }
-
-            if(c == '('){
-                tokens.push_back({TokenKind::LeftParen, string(1, c), i});
-                i++;
-                continue;
-            }
-
-            if(c == ')'){
-                tokens.push_back({TokenKind::RightParen, string(1, c), i});
-                i++;
-                continue;
-            }
-
-            if(c == '+'){
-                tokens.push_back({TokenKind::Plus, string(1, c), i});
-                i++;
-                continue;
-            }
-
-            if(c == '-'){
-                tokens.push_back({TokenKind::Minus, string(1, c), i});
-                i++;
-                continue;
-            }
-
-            throw TokenizeError(i, "Invalid character");
+            tokens.push_back({punctuation, string(1, c), i});
+            i++;
+            continue;
         }
 
         return tokens;
