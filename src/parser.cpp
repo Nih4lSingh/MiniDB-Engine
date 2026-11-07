@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <map>
 #include <array>
+#include <set>
 
 using namespace std;
 bool equalsIgnoreCase(string left, string right) {
@@ -110,7 +111,15 @@ namespace minidb {
                 if (i >= end || tokens[i].kind != TokenKind::Comma) break;
                 ++i;
             }
-
+            if(insert.values.size()!= insert.columns.size() && !insert.columns.empty()){
+                throw ParseError(i, "Number of values does not match number of columns");
+            }
+            set <string> uniqueColumns;
+            for (const auto& column : insert.columns) {
+                if (!uniqueColumns.insert(column).second) {
+                    throw ParseError(i, "Duplicate column name: " + column);
+                }
+            }
             if (i >= end || tokens[i++].kind != TokenKind::RightParen) {
                 throw ParseError(i - 1, "Expected ) after values");
             }
