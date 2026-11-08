@@ -32,8 +32,8 @@ namespace minidb {
         return tokenIndex_;
     }
     Statement parseStatement(const vector<Token>& tokens) {
-        vector<int> parenStack;
         string type;
+        size_t i = 1;
         if(tokens.size()<2){
             throw ParseError(0, "Expected statement type (CREATE, INSERT, SELECT)");
         }
@@ -58,7 +58,6 @@ namespace minidb {
         }
 
         if (type == "insert") {
-            size_t i = 1;
             if (i >= end || tokens[i].kind != TokenKind::Identifier ||
                  !equalsIgnoreCase(tokens[i++].text, "into")) {
                 throw ParseError(i - 1, "Expected INTO after INSERT");
@@ -68,7 +67,10 @@ namespace minidb {
             }
 
             InsertStatement insert;
-            insert.tableName = tokens[i++].text;
+            string tableName = tokens[i].text;
+            transform(tableName.begin(), tableName.end(), tableName.begin(), toLower);
+            insert.tableName = tableName;
+            ++i;
 
             if (i < end && tokens[i].kind == TokenKind::LeftParen) {
                 ++i;
@@ -140,42 +142,87 @@ namespace minidb {
             result.insert = insert;
             return result;
         }
+        if(type == "create"){
+            string tableName;
+            if(i >= end || !equalsIgnoreCase(tokens[i].text, "table") || 
+            tokens[i].kind != TokenKind::Identifier){
+                throw ParseError(i, "Expected TABLE after CREATE");
+            }
+            i++;
+            if(i + 1 >= end || tokens[i++].kind != TokenKind::Identifier){
+                throw ParseError(i - 1, "Expected table name after CREATE TABLE");
+            }
+            tableName = tokens[i - 1].text;
+            transform(tableName.begin(), tableName.end(), tableName.begin(), toLower);
+            if(tokens[i++].kind != TokenKind::LeftParen){
+                throw ParseError(i - 1, "Expected ( after table name");
+            }
+            CreateTableStatement create;
+            create.tableName = tableName;
+            map<string, int> columnNames;
+            while(i < end && tokens[i].kind != TokenKind::RightParen){
+                if(tokens[i].kind != TokenKind::Identifier){
+                    throw ParseError(i, "Expected column name");
+                }
+                ColumnDefinition colDef;
+                string ColName = tokens[i++].text;
+                transform(ColName.begin(), ColName.end(), ColName.begin(), toLower);
+                colDef.name = ColName;
+                if(columnNames[ColName] > 0){
+                    throw ParseError(i - 1, "Duplicate column name: " + ColName);
+                }
+                columnNames[ColName]++;
+                if(i >= end || tokens[i].kind != TokenKind::Identifier){
+                    throw ParseError(i, "Expected data type after column name");
+                }
+                string datatype = tokens[i++].text;
+                transform(datatype.begin(), datatype.end(), datatype.begin(), toLower);
 
-        if(type == "create" && !equalsIgnoreCase(tokens[1].text, "table")){
-            throw ParseError(1, "Expected TABLE after CREATE");
-        }
-        if(type == "select" && !equalsIgnoreCase(tokens[1].text, "*") && tokens[1].kind != TokenKind::Identifier){
-            throw ParseError(1, "Expected * or column name after SELECT");
-        }
-        if(type == "select" && !equalsIgnoreCase(tokens[2].text, "from")){
-            throw ParseError(2, "Expected FROM keyword after SELECT");
-        }
-        if(type == "select" && tokens[3].kind != TokenKind::Identifier){
-            throw ParseError(3, "Expected table name after FROM");
-        }
-        if(type == "create" && tokens[2].kind != TokenKind::Identifier){
-            throw ParseError(2, "Expected table name after CREATE TABLE");
-        }
-        if(type == "create"){
-            if(tokens[3].kind != TokenKind::LeftParen){
-                throw ParseError(3, "Expected ( after table name");
+                colDef.type = (datatype == "int") ? DataType::Integer :
+                              (datatype == "float") ? DataType::Float :
+                              (datatype == "text") ? DataType::Text : throw ParseError(i - 1, "Unknown data type: " + datatype);
+                create.columns.push_back(colDef);
+                if (i < end && tokens[i].kind == TokenKind::Comma) {
+                    ++i;
+                    if (i >= end || tokens[i].kind == TokenKind::RightParen) {
+                        throw ParseError(i, "Expected column definition after comma");
+                    }
+                    continue;
+                }
+                if (i < end && tokens[i].kind == TokenKind::RightParen) {
+                    break;
+                }
+                if(i < end && tokens[i].kind != TokenKind::Comma && tokens[i].kind != TokenKind::RightParen){
+                    throw ParseError(i, "Expected , or ) after column definition");
+                }
             }
-            parenStack.push_back(3);
-        }
-        if(type == "create"){
-            if(tokens[tokens.size()-2].kind != TokenKind::RightParen){
-                throw ParseError(tokens.size() - 2, "Expected ) at the end of statement");
+            if(i >= end || tokens[i++].kind != TokenKind::RightParen){
+                throw ParseError(i - 1, "Expected ) after column definitions");
             }
-            parenStack.pop_back();
-        }
-        Statement result{};
-        if (type == "create") {
+            if(create.columns.empty()){
+                throw ParseError(i - 1, "Expected at least one column definition");
+            }
+            if(i != end){
+                throw ParseError(i, "Unexpected token after CREATE TABLE statement");
+            }
+            Statement result{};
             result.kind = Statement::Kind::CreateTable;
-            result.createTable = CreateTableStatement{tokens[2].text, {}};
-        } else if (type == "select") {
-            result.kind = Statement::Kind::Select;
-            result.select = SelectStatement{{}, tokens[3].text};
+            result.createTable = create;
+            return result;
         }
+        if(type == "select"){
+            if(i>=end || (!equalsIgnoreCase(tokens[i++].text, "*") && tokens[i].kind != TokenKind::Identifier)){
+                throw ParseError(i - 1, "Expected * or column name after SELECT");
+            }
+            if(i>=end || !equalsIgnoreCase(tokens[i++].text, "from")){
+                throw ParseError(i - 1, "Expected FROM keyword after SELECT");
+            }
+            if(tokens[i].kind != TokenKind::Identifier){
+                throw ParseError(i, "Expected table name after FROM");
+            }
+        }
+        
+        Statement result{};
         return result;
     }
 }

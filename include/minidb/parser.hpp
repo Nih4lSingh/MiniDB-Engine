@@ -8,6 +8,7 @@
 namespace minidb {
     enum class DataType {
         Integer,
+        Float,
         Text
     };
 
