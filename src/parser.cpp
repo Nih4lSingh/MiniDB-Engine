@@ -46,16 +46,10 @@ namespace minidb {
                 break;
             }
         }
-        if (type.empty()) {
-            throw ParseError(0, "Expected statement type (CREATE, INSERT, SELECT)");
+        if (tokens.back().kind != TokenKind::Semicolon) {
+            throw ParseError(tokens.size(), "Expected ; at the end of statement");
         }
-        size_t end = tokens.size();
-        if (end > 0 && tokens[end - 1].kind == TokenKind::Semicolon) {
-            --end;
-        }
-        if (type != "insert" && end == tokens.size()) {
-            throw ParseError(tokens.size() - 1, "Expected ; at the end of statement");
-        }
+        size_t end = tokens.size() - 1;
 
         if (type == "insert") {
             if (i >= end || tokens[i].kind != TokenKind::Identifier ||
@@ -211,15 +205,47 @@ namespace minidb {
             return result;
         }
         if(type == "select"){
-            if(i>=end || (!equalsIgnoreCase(tokens[i++].text, "*") && tokens[i].kind != TokenKind::Identifier)){
+            bool Star = false;
+            SelectStatement select;
+            if(i>=end || (tokens[i].kind != TokenKind::Star && tokens[i].kind != TokenKind::Identifier)){
                 throw ParseError(i - 1, "Expected * or column name after SELECT");
             }
-            if(i>=end || !equalsIgnoreCase(tokens[i++].text, "from")){
-                throw ParseError(i - 1, "Expected FROM keyword after SELECT");
+            if(tokens[i].kind == TokenKind::Star){
+                Star = true;
+                i++;
             }
-            if(tokens[i].kind != TokenKind::Identifier){
+            if(!Star){
+                string Colname = tokens[i++].text;
+                transform(Colname.begin(), Colname.end(), Colname.begin(), toLower);
+                select.columns.push_back(Colname);
+                while(i < end && tokens[i].kind == TokenKind::Comma){
+                    i++;
+                    if(i>=end || tokens[i].kind != TokenKind::Identifier){
+                        throw ParseError(i, "Expected column name after comma");
+                    }
+                    Colname = tokens[i++].text;
+                    transform(Colname.begin(), Colname.end(), Colname.begin(), toLower);
+                    select.columns.push_back(Colname);
+                }
+            }
+            if(i>=end ||tokens[i].kind != TokenKind::Identifier || !equalsIgnoreCase(tokens[i].text, "from")){
+                throw ParseError(i - 1, "Expected FROM keyword after SELECT *");
+            }
+            i++;
+            if(i>=end || tokens[i].kind != TokenKind::Identifier){
                 throw ParseError(i, "Expected table name after FROM");
             }
+            string tableName = tokens[i].text;
+            transform(tableName.begin(), tableName.end(), tableName.begin(), toLower);
+            select.tableName = tableName;
+            i++;
+            if(i != end){
+                throw ParseError(i, "Unexpected token after SELECT statement");
+            }
+            Statement result{};
+            result.kind = Statement::Kind::Select; 
+            result.select = select;
+            return result;
         }
         
         Statement result{};
