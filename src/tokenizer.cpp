@@ -18,14 +18,14 @@ namespace minidb {
         string currentToken;
 
         for (i = 0; i < sql.size();){
-            char c = sql[i];
+            char character = sql[i];
 
-            if(isspace(static_cast<unsigned char>(c))){
+            if(isspace(static_cast<unsigned char>(character))){
                 i++;
                 continue;
             }
 
-            if(isdigit(static_cast<unsigned char>(c))){
+            if(isdigit(static_cast<unsigned char>(character))){
                 size_t start = i;
 
                 while(i < sql.size() && isdigit(static_cast<unsigned char>(sql[i]))){
@@ -54,7 +54,7 @@ namespace minidb {
                 continue;
             }
 
-            if(isalpha(static_cast<unsigned char>(c)) || c == '_'){
+            if(isalpha(static_cast<unsigned char>(character)) || character == '_'){
                 size_t start = i;
 
                 while(i < sql.size() &&
@@ -74,9 +74,9 @@ namespace minidb {
                 continue;
             }
 
-            if(c == '\''){
+            if(character == '\''){
                 size_t start = i;
-                currentToken += c;
+                currentToken += character;
                 i++;
 
                 bool closed = false;
@@ -109,7 +109,7 @@ namespace minidb {
             }
 
             TokenKind punctuation;
-            switch (c) {
+            switch (character) {
                 case ',': punctuation = TokenKind::Comma; break;
                 case '*': punctuation = TokenKind::Star; break;
                 case ';': punctuation = TokenKind::Semicolon; break;
@@ -119,7 +119,7 @@ namespace minidb {
                 case '-': punctuation = TokenKind::Minus; break;
                 default: throw TokenizeError(i, "Invalid character");
             }
-            tokens.push_back({punctuation, string(1, c), i});
+            tokens.push_back({punctuation, string(1, character), i});
             i++;
             continue;
         }
