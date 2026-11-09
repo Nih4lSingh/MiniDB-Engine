@@ -72,7 +72,7 @@ namespace minidb {
                 }
                 string currentTokencopy = currentToken;
                 transform(currentTokencopy.begin(), currentTokencopy.end(), currentTokencopy.begin(), toLower);
-                if(currentTokencopy == "NULL"){
+                if(currentTokencopy == "null"){
                     tokens.push_back({TokenKind::Null, currentTokencopy, start});
                     currentToken.clear();
                 }

@@ -87,10 +87,26 @@ namespace minidb {
                     "': expected " + dataTypeName(targetColumns[i].type) +
                     ", got " + valueTypeName(values[i].kind));
             }
+
             size_t idx = (find_if(table.columns.begin(), table.columns.end(),
                 [&](const ColumnDefinition& column) {
                     return column.name == targetColumns[i].name;
                     })) - table.columns.begin();
+
+            switch (targetColumns[i].type) {
+                case DataType::Float:
+                    if(values[i].kind != TokenKind::Null && find(values[i].text.begin(),values[i].text.end(),'.') == values[i].text.end()){
+                        values[i].text += ".0";
+                    }
+                    break;
+                case DataType::Integer:
+                    if(find(values[i].text.begin(),values[i].text.end(),'.') != values[i].text.end()){
+                        throw ExecutionError("Excpected Integer, got Float: '" + targetColumns[i].name +"'");
+                    }
+                    break;
+                case DataType::Text:
+                    break;
+            }
             row[idx] = values[i];
         }
         table.rows.push_back(row);
