@@ -4,8 +4,8 @@
 
 using namespace std;
 
-auto toUpper = [](unsigned char ch) {
-        return static_cast<char>(toupper(ch));
+auto toLower = [](unsigned char ch) {
+        return static_cast<char>(tolower(ch));
     };
 
 namespace minidb {
@@ -71,7 +71,7 @@ namespace minidb {
                     i++;
                 }
                 string currentTokencopy = currentToken;
-                transform(currentTokencopy.begin(), currentTokencopy.end(), currentTokencopy.begin(), toUpper);
+                transform(currentTokencopy.begin(), currentTokencopy.end(), currentTokencopy.begin(), toLower);
                 if(currentTokencopy == "NULL"){
                     tokens.push_back({TokenKind::Null, currentTokencopy, start});
                     currentToken.clear();

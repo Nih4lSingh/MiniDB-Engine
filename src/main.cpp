@@ -28,6 +28,7 @@ int main() {
                     break;
 
                 case minidb::Statement::Kind::Select:
+                    database.selectTable(statement.select);
                     break;
             }
 

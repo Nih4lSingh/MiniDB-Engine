@@ -1,9 +1,9 @@
 #include <minidb/database.hpp>
 
-#include <cctype>
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <iostream>
 
 using namespace std;
 
@@ -50,12 +50,11 @@ namespace minidb {
 
     void Database::insertTable(const InsertStatement& statement){
         auto tableIt = tables_.find(statement.tableName);
-        // After checking it isn't tables_.end():
-        
         if(tableIt == tables_.end()){
             throw ExecutionError("Table doesn't exist: " + statement.tableName);
         }
         Table& table = tableIt->second;
+
         vector<Token>values = statement.values;
         vector<ColumnDefinition> targetColumns;
 
@@ -97,4 +96,50 @@ namespace minidb {
         table.rows.push_back(row);
     }
 
+    void Database::selectTable(const SelectStatement& statement){
+        auto tableIt = tables_.find(statement.tableName);
+        if(tableIt == tables_.end()){
+            throw ExecutionError("Table doesn't exist: " + statement.tableName);
+        }
+        const Table& table = tableIt->second;
+
+        vector<ColumnDefinition> targetColumns;
+
+        if(statement.columns.empty()){
+            targetColumns = table.columns;
+        }
+        else{
+            for(const auto& name : statement.columns){
+                auto columnIt = find_if(table.columns.begin(), table.columns.end(),
+                    [&](const ColumnDefinition& column) {
+                        return column.name == name;
+                    });
+                if(columnIt == table.columns.end()){
+                    throw ExecutionError("Non exisiting column: " + name);
+                }
+                targetColumns.push_back(*columnIt);
+            }
+        }
+
+        for (const auto& column : targetColumns){
+            cout<<"| "+column.name+" | ";
+        }
+        cout<<'\n';
+
+        vector <size_t> colIndex;
+        for (size_t i = 0; i < targetColumns.size(); i++){
+            size_t idx = (find_if(table.columns.begin(), table.columns.end(),
+                [&](const ColumnDefinition& column) {
+                    return column.name == targetColumns[i].name;
+                    })) - table.columns.begin();
+            colIndex.push_back(idx);
+        }
+
+        for(const auto& row : table.rows){
+            for(size_t idx : colIndex){
+                cout<<"| "+row[idx].text+" | ";
+            }
+            cout<<'\n';
+        }
+    }
 }

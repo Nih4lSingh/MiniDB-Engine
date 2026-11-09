@@ -20,7 +20,8 @@ namespace minidb{
     class Database {
     public:
         void createTable(const CreateTableStatement& statement);
-        void insertTable(const InsertStatement& Statement);
+        void insertTable(const InsertStatement& statement);
+        void selectTable(const SelectStatement& statement);
     private:
         std::map<std::string, Table> tables_;
     };
