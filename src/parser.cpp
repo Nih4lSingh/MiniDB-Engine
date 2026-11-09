@@ -32,6 +32,7 @@ namespace minidb {
         return tokenIndex_;
     }
     Statement parseStatement(const vector<Token>& tokens) {
+        
         string type;
         size_t i = 1;
         if(tokens.size()<2){
@@ -46,15 +47,20 @@ namespace minidb {
                 break;
             }
         }
+        if (type.empty()) {
+            throw ParseError(0, "Expected statement type (CREATE, INSERT, SELECT)");
+        }
         if (tokens.back().kind != TokenKind::Semicolon) {
             throw ParseError(tokens.size(), "Expected ; at the end of statement");
         }
         size_t end = tokens.size() - 1;
 
+
         if (type == "insert") {
+            vector<size_t> insertColumnTokenIndexes;
             if (i >= end || tokens[i].kind != TokenKind::Identifier ||
                  !equalsIgnoreCase(tokens[i++].text, "into")) {
-                throw ParseError(i - 1, "Expected INTO after INSERT");
+                throw ParseError(i == 1 ? i : i - 1, "Expected INTO after INSERT");
             }
             if (i >= end || tokens[i].kind != TokenKind::Identifier) {
                 throw ParseError(i, "Expected table name after INTO");
@@ -71,18 +77,22 @@ namespace minidb {
                 if (i >= end || tokens[i].kind != TokenKind::Identifier) {
                     throw ParseError(i, "Expected column name");
                 }
+                size_t columnTokenIndex = i;
                 string Colname=tokens[i].text;
                 transform(Colname.begin(), Colname.end(), Colname.begin(), toLower);
                 insert.columns.push_back(Colname);
+                insertColumnTokenIndexes.push_back(columnTokenIndex);
                 ++i;
                 while (i < end && tokens[i].kind == TokenKind::Comma) {
                     ++i;
                     if (i >= end || tokens[i].kind != TokenKind::Identifier) {
                         throw ParseError(i, "Expected column name after comma");
                     }
+                    columnTokenIndex = i;
                     Colname=tokens[i].text;
                     transform(Colname.begin(), Colname.end(), Colname.begin(), toLower);
                     insert.columns.push_back(Colname);
+                    insertColumnTokenIndexes.push_back(columnTokenIndex);
                     ++i;
                 }
                 if (i >= end || tokens[i++].kind != TokenKind::RightParen) {
@@ -92,15 +102,18 @@ namespace minidb {
             set <string> uniqueColumns;
             for (const auto& column : insert.columns) {
                 if (!uniqueColumns.insert(column).second) {
-                    throw ParseError(i, "Duplicate column name: " + column);
+                    size_t duplicateIndex = static_cast<size_t>(&column - insert.columns.data());
+                    throw ParseError(insertColumnTokenIndexes[duplicateIndex], "Duplicate column name: " + column);
                 }
             }
+            size_t expectedValuesIndex = i;
             if (i >= end || tokens[i].kind != TokenKind::Identifier ||
                 !equalsIgnoreCase(tokens[i++].text, "values")) {
-                throw ParseError(i - 1, "Expected VALUES after table name or column list");
+                throw ParseError(i == expectedValuesIndex ? i : i - 1, "Expected VALUES after table name or column list");
             }
+            size_t expectedValuesParenIndex = i;
             if (i >= end || tokens[i++].kind != TokenKind::LeftParen) {
-                throw ParseError(i - 1, "Expected ( after VALUES");
+                throw ParseError(i == expectedValuesParenIndex ? i : i - 1, "Expected ( after VALUES");
             }
 
             while (true) {
@@ -123,11 +136,12 @@ namespace minidb {
                 ++i;
             }
             
+            size_t expectedValuesCloseIndex = i;
             if (i >= end || tokens[i++].kind != TokenKind::RightParen) {
-                throw ParseError(i - 1, "Expected ) after values");
+                throw ParseError(i == expectedValuesCloseIndex ? i : i - 1, "Expected ) after values");
             }
             if(insert.values.size()!= insert.columns.size() && !insert.columns.empty()){
-                throw ParseError(i, "Number of values does not match number of columns");
+                throw ParseError(i - 1, "Number of values does not match number of columns");
             }
             if (i != end) throw ParseError(i, "Unexpected token after INSERT statement");
 
@@ -136,6 +150,8 @@ namespace minidb {
             result.insert = insert;
             return result;
         }
+
+
         if(type == "create"){
             string tableName;
             if(i >= end || !equalsIgnoreCase(tokens[i].text, "table") || 
@@ -143,14 +159,15 @@ namespace minidb {
                 throw ParseError(i, "Expected TABLE after CREATE");
             }
             i++;
-            if(i + 1 >= end || tokens[i++].kind != TokenKind::Identifier){
-                throw ParseError(i - 1, "Expected table name after CREATE TABLE");
+            if(i >= end || tokens[i].kind != TokenKind::Identifier){
+                throw ParseError(i, "Expected table name after CREATE TABLE");
             }
-            tableName = tokens[i - 1].text;
+            tableName = tokens[i++].text;
             transform(tableName.begin(), tableName.end(), tableName.begin(), toLower);
-            if(tokens[i++].kind != TokenKind::LeftParen){
-                throw ParseError(i - 1, "Expected ( after table name");
+            if(i >= end || tokens[i].kind != TokenKind::LeftParen){
+                throw ParseError(i, "Expected ( after table name");
             }
+            i++;
             CreateTableStatement create;
             create.tableName = tableName;
             map<string, int> columnNames;
@@ -190,8 +207,9 @@ namespace minidb {
                     throw ParseError(i, "Expected , or ) after column definition");
                 }
             }
+            size_t expectedColumnCloseIndex = i;
             if(i >= end || tokens[i++].kind != TokenKind::RightParen){
-                throw ParseError(i - 1, "Expected ) after column definitions");
+                throw ParseError(i == expectedColumnCloseIndex ? i : i - 1, "Expected ) after column definitions");
             }
             if(create.columns.empty()){
                 throw ParseError(i - 1, "Expected at least one column definition");
@@ -204,11 +222,17 @@ namespace minidb {
             result.createTable = create;
             return result;
         }
+
+
         if(type == "select"){
             bool Star = false;
             SelectStatement select;
+            if(i < end && tokens[i].kind == TokenKind::Identifier &&
+               equalsIgnoreCase(tokens[i].text, "from")){
+                throw ParseError(i, "Expected * or column name after SELECT");
+            }
             if(i>=end || (tokens[i].kind != TokenKind::Star && tokens[i].kind != TokenKind::Identifier)){
-                throw ParseError(i - 1, "Expected * or column name after SELECT");
+                throw ParseError(i, "Expected * or column name after SELECT");
             }
             if(tokens[i].kind == TokenKind::Star){
                 Star = true;
@@ -220,7 +244,8 @@ namespace minidb {
                 select.columns.push_back(Colname);
                 while(i < end && tokens[i].kind == TokenKind::Comma){
                     i++;
-                    if(i>=end || tokens[i].kind != TokenKind::Identifier){
+                    if(i>=end || tokens[i].kind != TokenKind::Identifier ||
+                       equalsIgnoreCase(tokens[i].text, "from")){
                         throw ParseError(i, "Expected column name after comma");
                     }
                     Colname = tokens[i++].text;
@@ -229,7 +254,7 @@ namespace minidb {
                 }
             }
             if(i>=end ||tokens[i].kind != TokenKind::Identifier || !equalsIgnoreCase(tokens[i].text, "from")){
-                throw ParseError(i - 1, "Expected FROM keyword after SELECT *");
+                throw ParseError(i, "Expected FROM keyword after selected columns");
             }
             i++;
             if(i>=end || tokens[i].kind != TokenKind::Identifier){
