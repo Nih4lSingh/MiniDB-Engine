@@ -5,7 +5,7 @@ A small C++ SQL tokenizer project.
 ## Build
 
 ```sh
-g++ -std=c++17 -Wall -Wextra -pedantic -Iinclude src/main.cpp src/tokenizer.cpp src/parser.cpp -o minidb
+g++ -std=c++17 -Wall -Wextra -pedantic -Iinclude src/main.cpp src/tokenizer.cpp src/parser.cpp src/database.cpp -o minidb
 .\minidb.exe
 ```
 
