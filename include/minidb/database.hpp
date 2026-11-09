@@ -10,6 +10,7 @@
 namespace minidb{
     struct Table {
         std::vector<ColumnDefinition> columns;
+        std::vector<std::vector<Token>> rows;
     };
     class ExecutionError : public std::runtime_error {
     public:
@@ -19,7 +20,7 @@ namespace minidb{
     class Database {
     public:
         void createTable(const CreateTableStatement& statement);
-
+        void insertTable(const InsertStatement& Statement);
     private:
         std::map<std::string, Table> tables_;
     };
