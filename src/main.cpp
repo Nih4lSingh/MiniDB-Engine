@@ -4,27 +4,61 @@
 
 #include <iostream>
 #include <string>
+#include <utility>
 
 using namespace std;
 
+bool isQueryComplete(const string& query) {
+    bool insideString = false;
+
+    for (size_t i = 0; i < query.size(); i++) {
+        if (query[i] == '\'') {
+            if (insideString && i + 1 < query.size() && query[i + 1] == '\'') {
+                i++;
+            }
+            else {
+                insideString = !insideString;
+            }
+        }
+        else if (query[i] == ';' && !insideString) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 int main() {
+    string query;
     string sql;
     minidb::Database database;
-    while (cout << "miniDB> " && getline(cin, sql)) {
-        try {
-            auto tokens = minidb::tokenize(sql);
+    while (true) {
+        cout << ">> ";
+
+        if (!getline(cin, sql)) {
+            if (!query.empty()) {
+                cerr << "  Incomplete SQL statement\n";
+            }
+            break;
+        }
+        query += sql + " ";
+
+        if (isQueryComplete(query)) {
+            string querycopy = move(query);
+            query.clear();
+            try {
+            auto tokens = minidb::tokenize(querycopy);
             auto statement = minidb::parseStatement(tokens);
-            cout << "Parse successful:\n";
 
             switch (statement.kind) {
                 case minidb::Statement::Kind::CreateTable:
                     database.createTable(statement.createTable);
-                    cout<<"Table created successfully\n";
+                    cout<<"  Table created successfully\n";
                     break;
 
                 case minidb::Statement::Kind::Insert:
                     database.insertTable(statement.insert);
-                    cout<<"Added a new row successfully\n";
+                    cout<<"  Added a new row successfully\n";
                     break;
 
                 case minidb::Statement::Kind::Select:
@@ -32,12 +66,13 @@ int main() {
                     break;
             }
 
-        } catch (const minidb::TokenizeError& e) {
-            cerr << "Tokenize error: " << e.what() << '\n';
-        } catch (const minidb::ParseError& e) {
-            cerr << "Parse error: " << e.what() << '\n';
-        } catch (const minidb::ExecutionError & e){
-            cerr << "Execution error: " << e.what() << '\n';
+            } catch (const minidb::TokenizeError& e) {
+                cerr << "  Tokenize error: " << e.what() << '\n';
+            } catch (const minidb::ParseError& e) {
+                cerr << "  Parse error: " << e.what() << '\n';
+            } catch (const minidb::ExecutionError & e){
+                cerr << "  Execution error: " << e.what() << '\n';
+            }
         }
     }
 
