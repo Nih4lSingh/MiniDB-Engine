@@ -1,7 +1,12 @@
 #include <minidb/tokenizer.hpp>
 #include <cctype>
+#include <algorithm>
 
 using namespace std;
+
+auto toUpper = [](unsigned char ch) {
+        return static_cast<char>(toupper(ch));
+    };
 
 namespace minidb {
     TokenizeError::TokenizeError(size_t offset, const string& message)
@@ -65,7 +70,12 @@ namespace minidb {
                     currentToken += sql[i];
                     i++;
                 }
-
+                string currentTokencopy = currentToken;
+                transform(currentTokencopy.begin(), currentTokencopy.end(), currentTokencopy.begin(), toUpper);
+                if(currentTokencopy == "NULL"){
+                    tokens.push_back({TokenKind::Null, currentTokencopy, start});
+                    currentToken.clear();
+                }
                 if(!currentToken.empty()){
                     tokens.push_back({TokenKind::Identifier, currentToken, start});
                     currentToken.clear();

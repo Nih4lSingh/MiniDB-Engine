@@ -23,6 +23,8 @@ int main() {
                     break;
 
                 case minidb::Statement::Kind::Insert:
+                    database.insertTable(statement.insert);
+                    cout<<"Added a new row successfully\n";
                     break;
 
                 case minidb::Statement::Kind::Select:

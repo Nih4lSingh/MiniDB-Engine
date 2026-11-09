@@ -120,7 +120,8 @@ namespace minidb {
                 if (i >= end) throw ParseError(i, "Expected a value");
 
                 Token value;
-                if (tokens[i].kind == TokenKind::Number || tokens[i].kind == TokenKind::String) {
+                if (tokens[i].kind == TokenKind::Number || tokens[i].kind == TokenKind::String 
+                    || tokens[i].kind == TokenKind::Null) {
                     value = tokens[i++];
                 } else if ((tokens[i].kind == TokenKind::Plus || tokens[i].kind == TokenKind::Minus) &&
                            i + 1 < end && tokens[i + 1].kind == TokenKind::Number) {
@@ -128,7 +129,7 @@ namespace minidb {
                     value.kind = TokenKind::Number;
                     value.text += tokens[i++].text;
                 } else {
-                    throw ParseError(i, "Expected a number or string literal");
+                    throw ParseError(i, "Expected a number or string literal or null");
                 }
                 insert.values.push_back(value);
 

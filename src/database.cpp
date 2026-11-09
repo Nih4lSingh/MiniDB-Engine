@@ -10,6 +10,9 @@ using namespace std;
 namespace minidb {
 
     bool valueMatchesType(const Token& value, DataType type) {
+        if (value.kind == TokenKind::Null) {
+            return true;
+        }
         switch (type) {
             case DataType::Integer:
                 return value.kind == TokenKind::Number;
@@ -42,7 +45,7 @@ namespace minidb {
             throw ExecutionError("Table already exists: " + statement.tableName);
         }
 
-        tables_.emplace(statement.tableName, Table{statement.columns});
+        tables_.emplace(statement.tableName, Table{statement.columns,{}});
     }
 
     void Database::insertTable(const InsertStatement& statement){
@@ -74,8 +77,9 @@ namespace minidb {
         if (values.size() != targetColumns.size()) {
             throw ExecutionError("Number of values does not match number of columns");
         }
-
-        vector <Token> row(table.columns.size());
+        
+        Token nullValue{TokenKind::Null, "null", 0};
+        vector <Token> row(table.columns.size(), nullValue);
 
         for (size_t i = 0; i < values.size(); i++){
             if(!valueMatchesType(values[i],targetColumns[i].type)){
