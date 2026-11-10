@@ -18,7 +18,13 @@ namespace minidb{ // creating a namespace for the project
         Semicolon,
         Plus,
         Minus,
-        Null
+        Null,
+        GreaterThan,
+        LesserThan,
+        GreaterThanEqual,
+        LesserThanEqual,
+        EqualTo,
+        NotEqualTo
     }; // Types of tokens that can be recognized
 
     struct Token{ // A structure to represent a token

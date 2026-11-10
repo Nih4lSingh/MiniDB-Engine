@@ -118,8 +118,46 @@ namespace minidb {
                 continue;
             }
 
+            if(character == '!'){
+                if(i+1 < sql.size() && sql[i+1]=='='){
+                    tokens.push_back({TokenKind::NotEqualTo, string(1, character) + "=", i});
+                    i += 2;
+                    continue;
+                }
+                else{
+                    throw TokenizeError(i, "! operand not supported");
+                }
+            }
+
+            if(character == '<'){
+                if(i+1 < sql.size() && sql[i+1]=='='){
+                    tokens.push_back({TokenKind::LesserThanEqual, string(1, character) + "=", i});
+                    i += 2;
+                    continue;
+                }
+                else{
+                    tokens.push_back({TokenKind::LesserThan, string(1, character), i});
+                    i++;
+                    continue;
+                }
+            }
+
+            if(character == '>'){
+                if(i+1 < sql.size() && sql[i+1]=='='){
+                    tokens.push_back({TokenKind::GreaterThanEqual, string(1, character) + "=", i});
+                    i += 2;
+                    continue;
+                }
+                else{
+                    tokens.push_back({TokenKind::GreaterThan, string(1, character), i});
+                    i++;
+                    continue;
+                }
+            }
+
             TokenKind punctuation;
             switch (character) {
+                case '=': punctuation = TokenKind::EqualTo; break;
                 case ',': punctuation = TokenKind::Comma; break;
                 case '*': punctuation = TokenKind::Star; break;
                 case ';': punctuation = TokenKind::Semicolon; break;
