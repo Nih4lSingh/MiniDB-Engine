@@ -17,6 +17,28 @@ namespace minidb {
         return tokenIndex_;
     }
 
+    Token parseOperand(const vector<Token>& tokens, size_t& i, size_t end) {
+        if (i >= end) {
+            throw ParseError(i, "Expected an operand");
+        }
+
+        if (tokens[i].kind == TokenKind::Identifier ||
+            tokens[i].kind == TokenKind::Number ||
+            tokens[i].kind == TokenKind::String) {
+            return tokens[i++];
+        }
+
+        if ((tokens[i].kind == TokenKind::Minus || tokens[i].kind == TokenKind::Plus) 
+            && i + 1 < end && tokens[i + 1].kind == TokenKind::Number) {
+            Token value = tokens[i++];
+            value.kind = TokenKind::Number;
+            value.text += tokens[i++].text;
+            return value;
+        }
+
+        throw ParseError(i, "Expected a column or literal");
+    }
+
     Statement parseStatement(const vector<Token>& tokens) {
         
         string type;
@@ -249,11 +271,8 @@ namespace minidb {
             if (i < end && tokens[i].kind == TokenKind::Identifier && tokens[i].text == "where") {
                 select.condition = true;
                 i++;
-                if(i >= end || tokens[i].kind != TokenKind::Identifier && tokens[i].kind != TokenKind::Number 
-                    && tokens[i].kind != TokenKind::String){
-                    throw ParseError(i, "Expected column or literal in WHERE clause");
-                }
-                select.expression.LHS = tokens[i++];
+
+                select.expression.LHS = parseOperand(tokens,i,end);
 
                 if(i >= end || tokens[i].kind != TokenKind::EqualTo 
                 && tokens[i].kind != TokenKind::NotEqualTo
@@ -265,11 +284,7 @@ namespace minidb {
                 }
                 select.expression.Operator = tokens[i++];
 
-                if(i >= end || tokens[i].kind != TokenKind::Identifier && tokens[i].kind != TokenKind::Number 
-                    && tokens[i].kind != TokenKind::String){
-                    throw ParseError(i, "Expected column or literal after operator");
-                }
-                select.expression.RHS = tokens[i++];
+                select.expression.RHS = parseOperand(tokens,i,end);
             }
             
             if(i != end){
