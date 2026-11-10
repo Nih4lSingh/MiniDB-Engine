@@ -28,10 +28,18 @@ namespace minidb {
         std::vector<Token> values;
     };
 
+    struct Where{
+        minidb::Token LHS;
+        minidb::Token Operator;
+        minidb::Token RHS;
+    };
+
     struct SelectStatement {
         // An empty list will mean SELECT *.
         std::vector<std::string> columns;
         std::string tableName;
+        bool condition = false;
+        Where expression;
     };
 
     struct Statement {

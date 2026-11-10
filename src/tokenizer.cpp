@@ -70,13 +70,12 @@ namespace minidb {
                     currentToken += sql[i];
                     i++;
                 }
-                string currentTokencopy = currentToken;
-                transform(currentTokencopy.begin(), currentTokencopy.end(), currentTokencopy.begin(), toLower);
-                if(currentTokencopy == "null"){
-                    tokens.push_back({TokenKind::Null, currentTokencopy, start});
+                transform(currentToken.begin(), currentToken.end(), currentToken.begin(), toLower);
+
+                if(currentToken == "null"){
+                    tokens.push_back({TokenKind::Null, currentToken, start});
                     currentToken.clear();
-                }
-                if(!currentToken.empty()){
+                }else if(!currentToken.empty()){
                     tokens.push_back({TokenKind::Identifier, currentToken, start});
                     currentToken.clear();
                 }
