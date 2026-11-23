@@ -274,12 +274,13 @@ namespace minidb {
 
                 select.expression.LHS = parseOperand(tokens,i,end);
 
-                if(i >= end || tokens[i].kind != TokenKind::EqualTo 
-                && tokens[i].kind != TokenKind::NotEqualTo
-                && tokens[i].kind != TokenKind::GreaterThan
-                && tokens[i].kind != TokenKind::GreaterThanEqual
-                && tokens[i].kind != TokenKind::LesserThan
-                && tokens[i].kind != TokenKind::LesserThanEqual ){
+                if (i >= end ||
+                    (tokens[i].kind != TokenKind::EqualTo &&
+                    tokens[i].kind != TokenKind::NotEqualTo &&
+                    tokens[i].kind != TokenKind::GreaterThan &&
+                    tokens[i].kind != TokenKind::GreaterThanEqual &&
+                    tokens[i].kind != TokenKind::LesserThan &&
+                    tokens[i].kind != TokenKind::LesserThanEqual)) {
                     throw ParseError(i, "Expected operator in WHERE clause");
                 }
                 select.expression.Operator = tokens[i++];
