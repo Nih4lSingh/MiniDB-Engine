@@ -19,7 +19,7 @@ namespace minidb{
 
     class Database {
     public:
-        void createTable(const CreateTableStatement& statement);
+        void createTable(const CreateStatement& statement);
         void insertTable(const InsertStatement& statement);
         void selectTable(const SelectStatement& statement);
     private:

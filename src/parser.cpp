@@ -167,7 +167,7 @@ namespace minidb {
             if(i >= end || tokens[i].kind != TokenKind::Identifier){
                 throw ParseError(i, "Expected table name after CREATE TABLE");
             }
-            CreateTableStatement create;
+            CreateStatement create;
             create.tableName = tokens[i++].text;
             if(i >= end || tokens[i].kind != TokenKind::LeftParen){
                 throw ParseError(i, "Expected ( after table name");
@@ -222,7 +222,7 @@ namespace minidb {
             }
             Statement result{};
             result.kind = Statement::Kind::CreateTable;
-            result.createTable = create;
+            result.create = create;
             return result;
         }
 

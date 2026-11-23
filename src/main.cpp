@@ -52,7 +52,7 @@ int main() {
 
             switch (statement.kind) {
                 case minidb::Statement::Kind::CreateTable:
-                    database.createTable(statement.createTable);
+                    database.createTable(statement.create);
                     cout<<"  Table created successfully\n";
                     break;
 

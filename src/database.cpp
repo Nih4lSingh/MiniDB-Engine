@@ -40,7 +40,7 @@ namespace minidb {
         }
     }
 
-    void Database::createTable(const CreateTableStatement& statement) {
+    void Database::createTable(const CreateStatement& statement) {
         if (tables_.find(statement.tableName) != tables_.end()) {
             throw ExecutionError("Table already exists: " + statement.tableName);
         }

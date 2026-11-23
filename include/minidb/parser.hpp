@@ -17,7 +17,7 @@ namespace minidb {
         DataType type;
     };
 
-    struct CreateTableStatement {
+    struct CreateStatement {
         std::string tableName;
         std::vector<ColumnDefinition> columns;
     };
@@ -50,7 +50,7 @@ namespace minidb {
         };
 
         Kind kind;
-        CreateTableStatement createTable;
+        CreateStatement create;
         InsertStatement insert;
         SelectStatement select;
     };
