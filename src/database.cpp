@@ -40,6 +40,19 @@ namespace minidb {
         }
     }
 
+    template <typename T>
+    bool check(const T& left, const T& right, TokenKind op) {
+        switch (op) {
+            case TokenKind::EqualTo:          return left == right;
+            case TokenKind::NotEqualTo:       return left != right;
+            case TokenKind::GreaterThan:      return left > right;
+            case TokenKind::GreaterThanEqual: return left >= right;
+            case TokenKind::LesserThan:       return left < right;
+            case TokenKind::LesserThanEqual:  return left <= right;
+        }
+        return false; // Handles an unexpected operator.
+    }
+
     void Database::createTable(const CreateStatement& statement) {
         if (tables_.find(statement.tableName) != tables_.end()) {
             throw ExecutionError("Table already exists: " + statement.tableName);
@@ -138,7 +151,8 @@ namespace minidb {
         }
 
         bool decision = false;
-
+        int LcolIndex = -1;
+        int RcolIndex = -1;
         if(statement.condition){
 
             if(statement.expression.LHS.kind != TokenKind::Identifier 
@@ -196,8 +210,9 @@ namespace minidb {
                         return column.name == name;
                     });
                 if(columnIt == table.columns.end()){
-                    throw ExecutionError("Non exisiting column: " + name);
+                    throw ExecutionError("Non exisiting column on LHS: " + name);
                 }
+                LcolIndex = columnIt - table.columns.begin();
             }
 
             if(statement.expression.RHS.kind == TokenKind::Identifier){
@@ -207,8 +222,9 @@ namespace minidb {
                         return column.name == name;
                     });
                 if(columnIt == table.columns.end()){
-                    throw ExecutionError("Non exisiting column: " + name);
+                    throw ExecutionError("Non exisiting column on RHS: " + name);
                 }
+                RcolIndex = columnIt - table.columns.begin();
             }
 
             if (statement.expression.LHS.kind == TokenKind::Identifier 
@@ -224,7 +240,9 @@ namespace minidb {
                         return column.name == Rname;
                     });
                 
-                if(Lcolumn.type != Rcolumn.type){
+                if((Lcolumn.type != Rcolumn.type) 
+                    && (Rcolumn.type == DataType::Text 
+                    || Lcolumn.type == DataType::Text)){
                     throw ExecutionError("Column datatype mismatch");
                 }
             }
@@ -274,11 +292,55 @@ namespace minidb {
             colIndex.push_back(idx);
         }
 
-        for(const auto& row : table.rows){
-            for(size_t idx : colIndex){
-                cout<<"| "+row[idx].text+" | ";
+        for (const auto& row : table.rows) {
+            bool matches = true;
+
+            if (statement.condition) {
+                const auto& LHS = statement.expression.LHS;
+                const auto& RHS = statement.expression.RHS;
+                auto op = statement.expression.Operator.kind;
+
+                if (LHS.kind != TokenKind::Identifier && RHS.kind != TokenKind::Identifier) {
+                    matches = decision;
+                }
+                else if (LHS.kind == TokenKind::Identifier &&
+                        RHS.kind == TokenKind::Identifier) {
+                    if (table.columns[LcolIndex].type == DataType::Text) {
+                        matches = check(row[LcolIndex].text, row[RcolIndex].text, op);
+                    } else {
+                        double L = stod(row[LcolIndex].text);
+                        double R = stod(row[RcolIndex].text);
+                        matches = check(L, R, op);
+                    }
+                }
+                else if (LHS.kind == TokenKind::Identifier) {
+                    if (RHS.kind == TokenKind::String) {
+                        matches = check(row[LcolIndex].text, RHS.text, op);
+                    } else {
+                        double L = stod(row[LcolIndex].text);
+                        double R = stod(RHS.text);
+                        matches = check(L, R, op);
+                    }
+                }
+                else { 
+                    if (LHS.kind == TokenKind::String) {
+                        matches = check(LHS.text, row[RcolIndex].text, op);
+                    } else {
+                        double L = stod(LHS.text);
+                        double R = stod(row[RcolIndex].text);
+                        matches = check(L, R, op);
+                    }
+                }
             }
-            cout<<'\n';
+
+            if (!matches) {
+                continue;
+            }
+
+            for (size_t idx : colIndex) {
+                cout << "| " << row[idx].text << " | ";
+            }
+            cout << '\n';
         }
     }
 }
