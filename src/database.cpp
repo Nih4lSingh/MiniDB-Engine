@@ -137,6 +137,129 @@ namespace minidb {
             }
         }
 
+        bool decision = false;
+
+        if(statement.condition){
+
+            if(statement.expression.LHS.kind != TokenKind::Identifier 
+                && statement.expression.LHS.kind != TokenKind::String
+                && statement.expression.LHS.kind != TokenKind::Number){
+                    throw ExecutionError("Invalid Token at LHS, expected column name or literal");
+                };
+
+            if(statement.expression.RHS.kind != TokenKind::Identifier 
+                && statement.expression.RHS.kind != TokenKind::String
+                && statement.expression.RHS.kind != TokenKind::Number){
+                    throw ExecutionError("Invalid Token at RHS, expected column name or literal");
+                };
+            
+            if(statement.expression.LHS.kind != TokenKind::Identifier 
+                && statement.expression.RHS.kind != TokenKind::Identifier){
+
+                if(statement.expression.RHS.kind != statement.expression.LHS.kind){
+                    throw ExecutionError("Datatype mismatch");
+                }
+
+                if(statement.expression.LHS.kind == TokenKind::Number){
+                    double L = stod(statement.expression.LHS.text);
+                    double R = stod(statement.expression.RHS.text);
+
+                    switch(statement.expression.Operator.kind){
+                        case TokenKind::EqualTo: decision = L == R; break;
+                        case TokenKind::NotEqualTo: decision = L != R; break;
+                        case TokenKind::GreaterThan: decision = L > R; break;
+                        case TokenKind::GreaterThanEqual: decision = L >= R; break;
+                        case TokenKind::LesserThan: decision = L < R; break;
+                        case TokenKind::LesserThanEqual: decision = L <= R; break;
+                    }
+                }
+
+                if(statement.expression.LHS.kind == TokenKind::String){
+                    string L = statement.expression.LHS.text;
+                    string R = statement.expression.RHS.text;
+
+                    switch(statement.expression.Operator.kind){
+                        case TokenKind::EqualTo: decision = L == R; break;
+                        case TokenKind::NotEqualTo: decision = L != R; break;
+                        case TokenKind::GreaterThan: decision = L > R; break;
+                        case TokenKind::GreaterThanEqual: decision = L >= R; break;
+                        case TokenKind::LesserThan: decision = L < R; break;
+                        case TokenKind::LesserThanEqual: decision = L <= R; break;
+                    }
+                }
+            }
+
+            if(statement.expression.LHS.kind == TokenKind::Identifier){
+                string name = statement.expression.LHS.text;
+                auto columnIt = find_if(table.columns.begin(), table.columns.end(),
+                    [&](const ColumnDefinition& column) {
+                        return column.name == name;
+                    });
+                if(columnIt == table.columns.end()){
+                    throw ExecutionError("Non exisiting column: " + name);
+                }
+            }
+
+            if(statement.expression.RHS.kind == TokenKind::Identifier){
+                string name = statement.expression.RHS.text;
+                auto columnIt = find_if(table.columns.begin(), table.columns.end(),
+                    [&](const ColumnDefinition& column) {
+                        return column.name == name;
+                    });
+                if(columnIt == table.columns.end()){
+                    throw ExecutionError("Non exisiting column: " + name);
+                }
+            }
+
+            if (statement.expression.LHS.kind == TokenKind::Identifier 
+                && statement.expression.RHS.kind == TokenKind::Identifier){
+                string Lname = statement.expression.LHS.text, Rname = statement.expression.RHS.text;
+
+                auto Lcolumn = *find_if(table.columns.begin(), table.columns.end(),
+                    [&](const ColumnDefinition& column) {
+                        return column.name == Lname;
+                    });
+                auto Rcolumn = *find_if(table.columns.begin(), table.columns.end(),
+                    [&](const ColumnDefinition& column) {
+                        return column.name == Rname;
+                    });
+                
+                if(Lcolumn.type != Rcolumn.type){
+                    throw ExecutionError("Column datatype mismatch");
+                }
+            }
+            else if(statement.expression.LHS.kind == TokenKind::Identifier){
+                string Lname = statement.expression.LHS.text;
+
+                auto Lcolumn = *find_if(table.columns.begin(), table.columns.end(),
+                    [&](const ColumnDefinition& column) {
+                        return column.name == Lname;
+                    });
+                if(Lcolumn.type == DataType::Text && statement.expression.RHS.kind != TokenKind::String){
+                    throw ExecutionError("Column datatype mismatch");
+                }
+                if((Lcolumn.type == DataType::Float || Lcolumn.type == DataType::Integer) 
+                    && statement.expression.RHS.kind != TokenKind::Number){
+                    throw ExecutionError("Column datatype mismatch");
+                }
+            }
+            else if(statement.expression.RHS.kind == TokenKind::Identifier){
+                string Rname = statement.expression.RHS.text;
+
+                auto Rcolumn = *find_if(table.columns.begin(), table.columns.end(),
+                    [&](const ColumnDefinition& column) {
+                        return column.name == Rname;
+                    });
+                if(Rcolumn.type == DataType::Text && statement.expression.LHS.kind != TokenKind::String){
+                    throw ExecutionError("Column datatype mismatch");
+                }
+                if((Rcolumn.type == DataType::Float || Rcolumn.type == DataType::Integer) 
+                    && statement.expression.LHS.kind != TokenKind::Number){
+                    throw ExecutionError("Column datatype mismatch");
+                }
+            }
+        }
+
         for (const auto& column : targetColumns){
             cout<<"| "+column.name+" | ";
         }
