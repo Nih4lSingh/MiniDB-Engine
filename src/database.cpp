@@ -49,6 +49,7 @@ namespace minidb {
             case TokenKind::GreaterThanEqual: return left >= right;
             case TokenKind::LesserThan:       return left < right;
             case TokenKind::LesserThanEqual:  return left <= right;
+            default: break;
         }
         return false; // Handles an unexpected operator.
     }
@@ -185,6 +186,7 @@ namespace minidb {
                         case TokenKind::GreaterThanEqual: decision = L >= R; break;
                         case TokenKind::LesserThan: decision = L < R; break;
                         case TokenKind::LesserThanEqual: decision = L <= R; break;
+                        default: break;
                     }
                 }
 
@@ -199,6 +201,7 @@ namespace minidb {
                         case TokenKind::GreaterThanEqual: decision = L >= R; break;
                         case TokenKind::LesserThan: decision = L < R; break;
                         case TokenKind::LesserThanEqual: decision = L <= R; break;
+                        default: break;
                     }
                 }
             }
@@ -305,6 +308,9 @@ namespace minidb {
                 }
                 else if (LHS.kind == TokenKind::Identifier &&
                         RHS.kind == TokenKind::Identifier) {
+                    if(row[LcolIndex].kind == TokenKind::Null || row[RcolIndex].kind == TokenKind::Null){
+                        continue;
+                    }
                     if (table.columns[LcolIndex].type == DataType::Text) {
                         matches = check(row[LcolIndex].text, row[RcolIndex].text, op);
                     } else {
@@ -314,6 +320,9 @@ namespace minidb {
                     }
                 }
                 else if (LHS.kind == TokenKind::Identifier) {
+                    if(row[LcolIndex].kind == TokenKind::Null){
+                        continue;
+                    }
                     if (RHS.kind == TokenKind::String) {
                         matches = check(row[LcolIndex].text, RHS.text, op);
                     } else {
@@ -322,7 +331,10 @@ namespace minidb {
                         matches = check(L, R, op);
                     }
                 }
-                else { 
+                else {
+                    if(row[RcolIndex].kind == TokenKind::Null){
+                        continue;
+                    }
                     if (LHS.kind == TokenKind::String) {
                         matches = check(LHS.text, row[RcolIndex].text, op);
                     } else {
