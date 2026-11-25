@@ -22,6 +22,8 @@ namespace minidb{
         void createTable(const CreateStatement& statement);
         void insertTable(const InsertStatement& statement);
         void selectTable(const SelectStatement& statement);
+        void save(const std::string& filePath) const;
+        void load(const std::string& filePath);
     private:
         std::map<std::string, Table> tables_;
     };

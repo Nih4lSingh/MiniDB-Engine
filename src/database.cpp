@@ -4,6 +4,8 @@
 #include <string>
 #include <algorithm>
 #include <iostream>
+#include <fstream>
+#include <cstdint>
 
 using namespace std;
 
@@ -23,6 +25,7 @@ namespace minidb {
         }
         return false;
     }
+
     string dataTypeName(DataType type) {
         switch (type) {
             case DataType::Integer: return "INT";
@@ -51,7 +54,22 @@ namespace minidb {
             case TokenKind::LesserThanEqual:  return left <= right;
             default: break;
         }
-        return false; // Handles an unexpected operator.
+        return false;
+    }
+
+    void Database::save(const string& filePath) const {
+        ofstream out(filePath, ios::binary);
+
+        if (!out) {
+            throw ExecutionError("Could not open database file for writing");
+        }
+
+        const char marker[] = {'M', 'D', 'B', '1'};
+        out.write(marker, sizeof(marker));
+
+        if (!out) {
+            throw ExecutionError("Failed to write database file");
+        }
     }
 
     void Database::createTable(const CreateStatement& statement) {
