@@ -60,12 +60,31 @@ namespace minidb {
     void Database::save(const string& filePath) const {
         ofstream out(filePath, ios::binary);
 
-        if (!out) {
-            throw ExecutionError("Could not open database file for writing");
-        }
-
         const char marker[] = {'M', 'D', 'B', '1'};
         out.write(marker, sizeof(marker));
+
+        const uint64_t tableCount = tables_.size();
+        out.write(
+            reinterpret_cast<const char*>(&tableCount),
+            sizeof(tableCount)
+        );
+
+        auto writeString = [&out](const std::string& value) {
+            const std::uint64_t length = value.size();
+
+            out.write(
+                reinterpret_cast<const char*>(&length),
+                sizeof(length)
+            );
+            out.write(
+                value.data(),
+                static_cast<std::streamsize>(value.size())
+            );
+        };
+
+        for (const auto& entry : tables_) {
+            writeString(entry.first);
+        }
 
         if (!out) {
             throw ExecutionError("Failed to write database file");
