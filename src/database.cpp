@@ -39,8 +39,9 @@ namespace minidb {
         switch (kind) {
             case TokenKind::Number: return "number";
             case TokenKind::String: return "text";
+            case TokenKind::Null: return "null";
             default:                return "non-literal";
-        }
+        }   
     }
 
     template <typename T>
@@ -59,6 +60,10 @@ namespace minidb {
 
     void Database::save(const string& filePath) const {
         ofstream out(filePath, ios::binary);
+
+        if (!out) {
+            throw ExecutionError("Could not open database file for writing");
+        }
 
         const char marker[] = {'M', 'D', 'B', '1'};
         out.write(marker, sizeof(marker));
@@ -84,6 +89,28 @@ namespace minidb {
 
         for (const auto& entry : tables_) {
             writeString(entry.first);
+
+            const std::uint64_t columnCount = entry.second.columns.size();
+            out.write(
+                reinterpret_cast<const char*>(&columnCount),
+                sizeof(columnCount)
+            );
+            for(const auto& column : entry.second.columns){
+                writeString(column.name);
+                writeString(dataTypeName(column.type));
+            }
+
+            const std::uint64_t rowCount = entry.second.rows.size();
+            out.write(
+                reinterpret_cast<const char*>(&rowCount),
+                sizeof(rowCount)
+            );
+            for(const auto& row : entry.second.rows){
+                for(const auto& rowData : row){
+                    writeString(valueTypeName(rowData.kind));
+                    writeString(rowData.text);
+                }
+            }
         }
 
         if (!out) {
