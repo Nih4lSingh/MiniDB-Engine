@@ -35,6 +35,21 @@ namespace minidb {
         return "";
     }
 
+    DataType dataTypeFromName(const std::string& type) {
+        if (type == "INT") {
+            return DataType::Integer;
+        }
+        if (type == "FLOAT") {
+            return DataType::Float;
+        }
+        if (type == "TEXT") {
+            return DataType::Text;
+        }
+
+        throw ExecutionError("Unknown data type in database file: " + type);
+    }
+
+
     string valueTypeName(TokenKind kind) {
         switch (kind) {
             case TokenKind::Number: return "number";
@@ -42,6 +57,19 @@ namespace minidb {
             case TokenKind::Null: return "null";
             default:                return "non-literal";
         }   
+    }
+
+    TokenKind valueTypeFromName(string kind){
+        if (kind == "number") {
+            return TokenKind::Number;
+        }
+        if (kind == "text") {
+            return TokenKind::String;
+        }
+        if (kind == "null") {
+            return TokenKind::Null;
+        }
+        throw ExecutionError("Unknown value token type in database file: " + kind);
     }
 
     template <typename T>
@@ -74,8 +102,8 @@ namespace minidb {
             sizeof(tableCount)
         );
 
-        auto writeString = [&out](const std::string& value) {
-            const std::uint64_t length = value.size();
+        auto writeString = [&out](const string& value) {
+            const uint64_t length = value.size();
 
             out.write(
                 reinterpret_cast<const char*>(&length),
@@ -83,14 +111,14 @@ namespace minidb {
             );
             out.write(
                 value.data(),
-                static_cast<std::streamsize>(value.size())
+                static_cast<streamsize>(value.size())
             );
         };
 
         for (const auto& entry : tables_) {
             writeString(entry.first);
 
-            const std::uint64_t columnCount = entry.second.columns.size();
+            const uint64_t columnCount = entry.second.columns.size();
             out.write(
                 reinterpret_cast<const char*>(&columnCount),
                 sizeof(columnCount)
@@ -100,7 +128,7 @@ namespace minidb {
                 writeString(dataTypeName(column.type));
             }
 
-            const std::uint64_t rowCount = entry.second.rows.size();
+            const uint64_t rowCount = entry.second.rows.size();
             out.write(
                 reinterpret_cast<const char*>(&rowCount),
                 sizeof(rowCount)
@@ -115,6 +143,94 @@ namespace minidb {
 
         if (!out) {
             throw ExecutionError("Failed to write database file");
+        }
+    }
+
+    void Database::load(const string& filePath) {
+        ifstream in(filePath, ios::binary);
+
+        if (!in) {
+            return;
+        }
+
+        char marker[4];
+        in.read(marker, sizeof(marker));
+
+        if (!in || string(marker, sizeof(marker)) != "MDB1") {
+            throw ExecutionError("Invalid database file");
+        }
+
+        auto readCount = [&in]() -> uint64_t {
+            uint64_t value = 0;
+            in.read(
+                reinterpret_cast<char*>(&value),
+                sizeof(value)
+            );
+
+            if (!in) {
+                throw ExecutionError("Failed to read a count from database file");
+            }
+
+            return value;
+        };
+
+        auto readString = [&in, &readCount]() -> string {
+            const uint64_t length = readCount();
+            string value(static_cast<size_t>(length), '\0');
+
+            if (length > 0) {
+                in.read(
+                    &value[0],
+                    static_cast<streamsize>(length)
+                );
+            }
+            if (!in) {
+                throw ExecutionError("Failed to read a string from database file");
+            }
+
+            return value;
+        }; 
+
+        const uint64_t tableCount = readCount();
+        for(uint64_t tab = 0; tab < tableCount; tab++){
+            const string tableName = readString();
+            const uint64_t columnCount = readCount();
+            Table TABLE;
+
+            for(uint64_t col = 0; col < columnCount; col++){
+
+                const string columnName = readString();
+                const string type = readString();
+                DataType columnDatatype = dataTypeFromName(type);
+                
+                ColumnDefinition colDefinition;
+                colDefinition.name = columnName;
+                colDefinition.type = columnDatatype;
+                TABLE.columns.push_back(colDefinition);
+            }
+
+            const uint64_t rowCount = readCount();
+
+            for(uint64_t row = 0; row < rowCount; row++){
+
+                vector<Token>ROW;
+                for(uint64_t index = 0; index < columnCount; index++){
+
+                    const TokenKind valueKind = valueTypeFromName(readString());
+                    const string valuetext = readString();
+
+                    Token value;
+                    value.kind = valueKind;
+                    value.text = valuetext;
+                    value.offset = 0;
+
+                    ROW.push_back(value);
+                }
+
+                TABLE.rows.push_back(ROW);
+            }
+
+            tables_[tableName] = TABLE;
         }
     }
 
