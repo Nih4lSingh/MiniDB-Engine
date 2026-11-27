@@ -1,6 +1,6 @@
 # MiniDB-Engine
 
-MiniDB-Engine is a C++17 learning project for building a small SQL database engine from scratch. It currently supports basic schema creation, row insertion, and selection with a single comparison-based `WHERE` condition. Tables are held in memory while the program runs.
+MiniDB-Engine is a C++17 learning project for building a small SQL database engine from scratch. It currently supports basic schema creation, row insertion, and selection with a single comparison-based `WHERE` condition. Tables are held in memory while the program runs and saved to a binary database file for use across sessions.
 
 ## Implemented features
 
@@ -15,6 +15,7 @@ MiniDB-Engine is a C++17 learning project for building a small SQL database engi
 - **INSERT behavior:** Supports optional column lists. Columns omitted from an insert are initialized to `NULL`. Integer-looking values inserted into `FLOAT` columns are displayed with a decimal part, such as `23.0`.
 - **SELECT behavior:** Reads all rows or selected columns, preserves requested column order, and applies the single `WHERE` comparison to filter rows. Numeric columns can be compared with other numeric columns, including `INT`/`FLOAT` pairs.
 - **NULL behavior:** A row is skipped when a column referenced by the `WHERE` comparison contains a stored `NULL`. The parser currently rejects `NULL` as a `WHERE` operand; `IS NULL`, `AND`, and `OR` are not implemented.
+- **Persistence and serialization:** `save()` serializes table names, column definitions, and row values to a binary file. `load()` restores them into the in-memory database at startup. The CLI saves after successful `CREATE TABLE` and `INSERT` statements. The save/reload round trip has been manually verified.
 - **CLI:** Accepts multiline SQL input and processes statements sequentially in one session. Each statement must end with a semicolon. Multiple statements in one input query are not supported.
 - **Errors:** Tokenization, parsing, and execution errors are reported separately.
 
@@ -50,6 +51,6 @@ The final query returns Asha's row.
 
 ## Current status and next steps
 
-The basic in-memory SQL workflow and single-condition `WHERE` filtering have been implemented and manually exercised. Week 3 work is beginning with file persistence. The initial binary-file prototype writes a format marker; saving and loading table schemas and row data is not yet implemented. A B+ tree is also planned.
+The basic in-memory SQL workflow, single-condition `WHERE` filtering, and binary persistence have been implemented and manually exercised. Table schemas and row data are serialized and restored across program sessions. Week 3 work remaining includes B+ tree indexing. Further planned work includes automated tests, `AND`/`OR` conditions, `IS NULL`, more robust error handling, and benchmarking.
 
 Further planned work includes automated tests, `AND`/`OR` conditions, `IS NULL`, more robust error handling, and benchmarking.
