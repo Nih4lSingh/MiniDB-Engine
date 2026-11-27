@@ -32,6 +32,15 @@ int main() {
     string query;
     string sql;
     minidb::Database database;
+
+    string FILE_PATH = "minidb.db";
+    try {
+        database.load(FILE_PATH);
+    } catch (const minidb::ExecutionError& e) {
+        cerr << "Database load error: " << e.what() << '\n';
+        return 1;
+    }
+
     while (true) {
         cout << ">> ";
 
@@ -53,11 +62,13 @@ int main() {
             switch (statement.kind) {
                 case minidb::Statement::Kind::CreateTable:
                     database.createTable(statement.create);
+                    database.save(FILE_PATH);
                     cout<<"  Table created successfully\n";
                     break;
 
                 case minidb::Statement::Kind::Insert:
                     database.insertTable(statement.insert);
+                    database.save(FILE_PATH);
                     cout<<"  Added a new row successfully\n";
                     break;
 
